@@ -114,6 +114,17 @@ debug-mode: false
 # OptiFine capes, LabyMod capes, 5Zig capes and MinecraftCapes
 allow-third-party-capes: false
 
+# Set a custom base URI for the authentication server.
+# Should look similar to the following: https://authserver.example.com/
+# You don't need this, unless you run your own auth server.
+# Leave empty to use the official auth servers.
+auth-base-uri: ""
+# Set a custom base URI for the session server.
+# Should look similar to the following: https://session.example.com/
+# You don't need this, unless you run your own session server.
+# Leave empty to use the official session servers.
+session-base-uri: ""
+
 # Allow third party deadmau5 ears to be visible. Currently allowing:
 # MinecraftCapes
 allow-third-party-ears: false

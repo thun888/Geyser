@@ -206,7 +206,7 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
                     session.authenticate(session.getAuthData().name());
                 } else if (!couldLoginUserByName(session.getAuthData().name())) {
                     // We must spawn the white world
-                    session.connect();
+                    session.connect();//TODO:locate by here
                 }
                 geyser.getLogger().info(GeyserLocale.getLocaleStringLog("geyser.network.connect", session.getAuthData().name()));
                 break;
