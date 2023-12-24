@@ -736,11 +736,6 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource {
                 if (password != null && !password.isEmpty()) {
                     AuthenticationService authenticationService = new MojangAuthenticationService();
 
-                    String authBaseUri = geyser.getConfig().getAuthBaseUri();
-                    if (!authBaseUri.isEmpty()) {
-                        if (!authBaseUri.endsWith("/")) authBaseUri += "/";
-                        authenticationService.setBaseUri(authBaseUri);
-                    }
                     authenticationService.setUsername(username);
                     authenticationService.setPassword(password);
                     authenticationService.login();
@@ -787,19 +782,12 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource {
 
         CompletableFuture.supplyAsync(() -> {
             MsaAuthenticationService service = new MsaAuthenticationService(GeyserImpl.OAUTH_CLIENT_ID);
-
             service.setRefreshToken(refreshToken);
             try {
                 service.login();
             } catch (RequestException e) {
                 geyser.getLogger().error("Error while attempting to use refresh token for " + bedrockUsername() + "!", e);
                 return Boolean.FALSE;
-            }
-            AuthenticationService authenticationService = new MojangAuthenticationService();
-            String authBaseUri = geyser.getConfig().getAuthBaseUri();
-            if (!authBaseUri.isEmpty()) {
-                if (!authBaseUri.endsWith("/")) authBaseUri += "/";
-                authenticationService.setBaseUri(authBaseUri);
             }
             GameProfile profile = service.getSelectedProfile();
             if (profile == null) {
@@ -941,16 +929,6 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource {
             downstream = new LocalSession(this.remoteServer.address(), this.remoteServer.port(),
                     geyser.getBootstrap().getSocketAddress(), upstream.getAddress().getAddress().getHostAddress(),
                     this.protocol, this.protocol.createHelper());
-
-            String sessionBaseUri = geyser.getConfig().getSessionBaseUri();
-            if (!sessionBaseUri.isEmpty()) {
-                if (!sessionBaseUri.endsWith("/")) sessionBaseUri += "/";
-                if (!sessionBaseUri.endsWith("session/minecraft/")) sessionBaseUri += "session/minecraft/";
-
-                SessionService sessionService = new SessionService();
-                sessionService.setBaseUri(sessionBaseUri);
-                downstream.setFlag(MinecraftConstants.SESSION_SERVICE_KEY, sessionService);
-            }
             this.downstream = new DownstreamSession(downstream);
         } else {
             downstream = new TcpClientSession(this.remoteServer.address(), this.remoteServer.port(), this.protocol);
