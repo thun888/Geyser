@@ -1,0 +1,60 @@
+From 2d2ce1d7b4f62fcbdc95b24397ab612a91491afe Mon Sep 17 00:00:00 2001
+From: Shanwer <Shanwer@qq.com>
+Date: Mon, 25 Dec 2023 14:35:58 +0800
+Subject: [PATCH 5/7] Make workflow artifacts downloadable
+
+---
+ .github/workflows/gradle.yml | 38 +++++++++++++++++++++++++++++++++++-
+ 1 file changed, 37 insertions(+), 1 deletion(-)
+
+diff --git a/.github/workflows/gradle.yml b/.github/workflows/gradle.yml
+index d5a9d3a7..5859f10f 100644
+--- a/.github/workflows/gradle.yml
++++ b/.github/workflows/gradle.yml
+@@ -29,6 +29,42 @@ jobs:
+         java-version: '17'
+         distribution: 'temurin'
+     - name: Build with Gradle
+-      uses: gradle/gradle-build-action@bd5760595778326ba7f1441bcf7e88b49de61a25 # v2.6.0
++      uses: gradle/gradle-build-action@v3 # v2.6.0
+       with:
+         arguments: build
++    - name: Archive artifacts (Geyser Fabric)
++        # See https://github.com/actions/upload-artifact/commits
++      uses: actions/upload-artifact@v3
++      if: success()
++      with:
++        name: Geyser Fabric
++        path: bootstrap/fabric/build/libs/Geyser-Fabric.jar
++        if-no-files-found: error
++    - name: Archive artifacts (Geyser Standalone)
++      uses: actions/upload-artifact@v3
++      if: success()
++      with:
++        name: Geyser Standalone
++        path: bootstrap/standalone/build/libs/Geyser-Standalone.jar
++        if-no-files-found: error
++    - name: Archive artifacts (Geyser Spigot)
++      uses: actions/upload-artifact@v3
++      if: success()
++      with:
++        name: Geyser Spigot
++        path: bootstrap/spigot/build/libs/Geyser-Spigot.jar
++        if-no-files-found: error
++    - name: Archive artifacts (Geyser BungeeCord)
++      uses: actions/upload-artifact@v3
++      if: success()
++      with:
++        name: Geyser BungeeCord
++        path: bootstrap/bungeecord/build/libs/Geyser-BungeeCord.jar
++        if-no-files-found: error
++    - name: Archive artifacts (Geyser Velocity)
++      uses: actions/upload-artifact@v3
++      if: success()
++      with:
++        name: Geyser Velocity
++        path: bootstrap/velocity/build/libs/Geyser-Velocity.jar
++        if-no-files-found: error
+-- 
+2.39.1.windows.1
+

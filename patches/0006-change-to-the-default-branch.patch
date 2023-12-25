@@ -1,0 +1,57 @@
+From 71a0a337f6cd5e2e83cc66b2cc91aa1b3aa31196 Mon Sep 17 00:00:00 2001
+From: Shanwer <Shanwer@qq.com>
+Date: Mon, 25 Dec 2023 14:48:33 +0800
+Subject: [PATCH 6/7] change to the default branch
+
+---
+ .github/workflows/gradle.yml | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/.github/workflows/gradle.yml b/.github/workflows/gradle.yml
+index 5859f10f..e720a15b 100644
+--- a/.github/workflows/gradle.yml
++++ b/.github/workflows/gradle.yml
+@@ -34,35 +34,35 @@ jobs:
+         arguments: build
+     - name: Archive artifacts (Geyser Fabric)
+         # See https://github.com/actions/upload-artifact/commits
+-      uses: actions/upload-artifact@v3
++      uses: actions/upload-artifact@main
+       if: success()
+       with:
+         name: Geyser Fabric
+         path: bootstrap/fabric/build/libs/Geyser-Fabric.jar
+         if-no-files-found: error
+     - name: Archive artifacts (Geyser Standalone)
+-      uses: actions/upload-artifact@v3
++      uses: actions/upload-artifact@main
+       if: success()
+       with:
+         name: Geyser Standalone
+         path: bootstrap/standalone/build/libs/Geyser-Standalone.jar
+         if-no-files-found: error
+     - name: Archive artifacts (Geyser Spigot)
+-      uses: actions/upload-artifact@v3
++      uses: actions/upload-artifact@main
+       if: success()
+       with:
+         name: Geyser Spigot
+         path: bootstrap/spigot/build/libs/Geyser-Spigot.jar
+         if-no-files-found: error
+     - name: Archive artifacts (Geyser BungeeCord)
+-      uses: actions/upload-artifact@v3
++      uses: actions/upload-artifact@main
+       if: success()
+       with:
+         name: Geyser BungeeCord
+         path: bootstrap/bungeecord/build/libs/Geyser-BungeeCord.jar
+         if-no-files-found: error
+     - name: Archive artifacts (Geyser Velocity)
+-      uses: actions/upload-artifact@v3
++      uses: actions/upload-artifact@main
+       if: success()
+       with:
+         name: Geyser Velocity
+-- 
+2.39.1.windows.1
+

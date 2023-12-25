@@ -1,0 +1,321 @@
+From 110051a28e7689c8fd652c2a370dd963c34e8e26 Mon Sep 17 00:00:00 2001
+From: Shanwer <Shanwer@qq.com>
+Date: Mon, 25 Dec 2023 00:27:33 +0800
+Subject: [PATCH 2/7] By refering the commit #4147, revert the mojang login
+ function.
+
+---
+ .../java/org/geysermc/geyser/GeyserImpl.java  |  5 ++++
+ .../configuration/GeyserConfiguration.java    | 18 ++++++++++---
+ .../GeyserJacksonConfiguration.java           | 20 ++++++++++++++
+ .../geyser/network/UpstreamPacketHandler.java | 10 +++++++
+ .../geyser/session/GeyserSession.java         | 22 ---------------
+ .../geyser/util/LoginEncryptionUtils.java     | 27 ++++++++++++++++++-
+ core/src/main/resources/config.yml            | 11 --------
+ 7 files changed, 75 insertions(+), 38 deletions(-)
+
+diff --git a/core/src/main/java/org/geysermc/geyser/GeyserImpl.java b/core/src/main/java/org/geysermc/geyser/GeyserImpl.java
+index aef2288d..adfd7403 100644
+--- a/core/src/main/java/org/geysermc/geyser/GeyserImpl.java
++++ b/core/src/main/java/org/geysermc/geyser/GeyserImpl.java
+@@ -479,6 +479,11 @@ public class GeyserImpl implements GeyserApi {
+         }
+ 
+         if (config.getRemote().authType() == AuthType.ONLINE) {
++            if (config.getUserAuths() != null && !config.getUserAuths().isEmpty()) {
++                getLogger().warning("The 'userAuths' config section is now deprecated, and will be removed in the near future! " +
++                        "Please migrate to the new 'saved-user-logins' config option: " +
++                        "https://wiki.geysermc.org/geyser/understanding-the-config/");
++            }
+             // May be written/read to on multiple threads from each GeyserSession as well as writing the config
+             savedRefreshTokens = new ConcurrentHashMap<>();
+ 
+diff --git a/core/src/main/java/org/geysermc/geyser/configuration/GeyserConfiguration.java b/core/src/main/java/org/geysermc/geyser/configuration/GeyserConfiguration.java
+index cc9e401e..554f5f0e 100644
+--- a/core/src/main/java/org/geysermc/geyser/configuration/GeyserConfiguration.java
++++ b/core/src/main/java/org/geysermc/geyser/configuration/GeyserConfiguration.java
+@@ -36,6 +36,7 @@ import org.geysermc.geyser.text.GeyserLocale;
+ 
+ import java.nio.file.Path;
+ import java.util.List;
++import java.util.Map;
+ 
+ public interface GeyserConfiguration {
+     /**
+@@ -52,6 +53,8 @@ public interface GeyserConfiguration {
+ 
+     List<String> getSavedUserLogins();
+ 
++    Map<String, ? extends IUserAuthenticationInfo> getUserAuths();
++
+     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+     boolean isCommandSuggestions();
+ 
+@@ -76,10 +79,6 @@ public interface GeyserConfiguration {
+ 
+     boolean isAllowThirdPartyEars();
+ 
+-    String getAuthBaseUri();
+-
+-    String getSessionBaseUri();
+-
+     String getShowCooldown();
+ 
+     boolean isShowCoordinates();
+@@ -146,6 +145,8 @@ public interface GeyserConfiguration {
+ 
+         void setPort(int port);
+ 
++        boolean isPasswordAuthentication();
++
+         boolean isUseProxyProtocol();
+ 
+         boolean isForwardHost();
+@@ -159,8 +160,17 @@ public interface GeyserConfiguration {
+         }
+ 
+         void setAuthType(AuthType authType);
++
++
+     }
+ 
++    interface IUserAuthenticationInfo {
++        String getEmail();
++
++        String getPassword();
++
++        boolean isMicrosoftAccount();
++    }
+     interface IMetricsInfo {
+ 
+         boolean isEnabled();
+diff --git a/core/src/main/java/org/geysermc/geyser/configuration/GeyserJacksonConfiguration.java b/core/src/main/java/org/geysermc/geyser/configuration/GeyserJacksonConfiguration.java
+index 60854712..aef8891c 100644
+--- a/core/src/main/java/org/geysermc/geyser/configuration/GeyserJacksonConfiguration.java
++++ b/core/src/main/java/org/geysermc/geyser/configuration/GeyserJacksonConfiguration.java
+@@ -45,6 +45,7 @@ import java.io.IOException;
+ import java.nio.file.Path;
+ import java.util.Collections;
+ import java.util.List;
++import java.util.Map;
+ import java.util.UUID;
+ import java.util.stream.Collectors;
+ 
+@@ -67,6 +68,8 @@ public abstract class GeyserJacksonConfiguration implements GeyserConfiguration
+ 
+     public abstract Path getFloodgateKeyPath();
+ 
++    private Map<String, UserAuthenticationInfo> userAuths;
++
+     @JsonProperty("command-suggestions")
+     private boolean commandSuggestions = true;
+ 
+@@ -276,6 +279,10 @@ public abstract class GeyserJacksonConfiguration implements GeyserConfiguration
+             return false;
+         }
+ 
++        @Getter
++        @JsonProperty("allow-password-authentication")
++        private boolean passwordAuthentication = true;
++
+         @Getter
+         @JsonProperty("use-proxy-protocol")
+         private boolean useProxyProtocol = false;
+@@ -285,6 +292,19 @@ public abstract class GeyserJacksonConfiguration implements GeyserConfiguration
+         private boolean forwardHost = false;
+     }
+ 
++    @Getter
++    @JsonIgnoreProperties(ignoreUnknown = true) // DO NOT REMOVE THIS! Otherwise, after we remove microsoft-account configs will not load
++    public static class UserAuthenticationInfo implements IUserAuthenticationInfo {
++        @AsteriskSerializer.Asterisk()
++        private String email;
++
++        @AsteriskSerializer.Asterisk()
++        private String password;
++
++        @JsonProperty("microsoft-account")
++        private boolean microsoftAccount = false;
++    }
++
+     @Getter
+     @JsonIgnoreProperties(ignoreUnknown = true)
+     public static class MetricsInfo implements IMetricsInfo {
+diff --git a/core/src/main/java/org/geysermc/geyser/network/UpstreamPacketHandler.java b/core/src/main/java/org/geysermc/geyser/network/UpstreamPacketHandler.java
+index 33f5c142..f3d408bd 100644
+--- a/core/src/main/java/org/geysermc/geyser/network/UpstreamPacketHandler.java
++++ b/core/src/main/java/org/geysermc/geyser/network/UpstreamPacketHandler.java
+@@ -52,6 +52,7 @@ import org.geysermc.geyser.api.network.AuthType;
+ import org.geysermc.geyser.api.pack.PackCodec;
+ import org.geysermc.geyser.api.pack.ResourcePack;
+ import org.geysermc.geyser.api.pack.ResourcePackManifest;
++import org.geysermc.geyser.configuration.GeyserConfiguration;
+ import org.geysermc.geyser.event.type.SessionLoadResourcePacksEventImpl;
+ import org.geysermc.geyser.pack.GeyserResourcePack;
+ import org.geysermc.geyser.registry.BlockRegistries;
+@@ -261,6 +262,15 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
+                 return true;
+             }
+         }
++        if (geyser.getConfig().getUserAuths() != null) {
++            GeyserConfiguration.IUserAuthenticationInfo info = geyser.getConfig().getUserAuths().get(bedrockUsername);
++
++            if (info != null) {
++                geyser.getLogger().info(GeyserLocale.getLocaleStringLog("geyser.auth.stored_credentials", session.getAuthData().name()));
++                session.authenticate(info.getEmail(), info.getPassword());
++                return true;
++            }
++        }
+         PendingMicrosoftAuthentication.AuthenticationTask task = geyser.getPendingMicrosoftAuthentication().getTask(session.getAuthData().xuid());
+         if (task != null) {
+             return task.getAuthentication().isDone() && session.onMicrosoftLoginComplete(task);
+diff --git a/core/src/main/java/org/geysermc/geyser/session/GeyserSession.java b/core/src/main/java/org/geysermc/geyser/session/GeyserSession.java
+index 9abdb97d..7d1509ab 100644
+--- a/core/src/main/java/org/geysermc/geyser/session/GeyserSession.java
++++ b/core/src/main/java/org/geysermc/geyser/session/GeyserSession.java
+@@ -736,11 +736,6 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource {
+                 if (password != null && !password.isEmpty()) {
+                     AuthenticationService authenticationService = new MojangAuthenticationService();
+ 
+-                    String authBaseUri = geyser.getConfig().getAuthBaseUri();
+-                    if (!authBaseUri.isEmpty()) {
+-                        if (!authBaseUri.endsWith("/")) authBaseUri += "/";
+-                        authenticationService.setBaseUri(authBaseUri);
+-                    }
+                     authenticationService.setUsername(username);
+                     authenticationService.setPassword(password);
+                     authenticationService.login();
+@@ -787,7 +782,6 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource {
+ 
+         CompletableFuture.supplyAsync(() -> {
+             MsaAuthenticationService service = new MsaAuthenticationService(GeyserImpl.OAUTH_CLIENT_ID);
+-
+             service.setRefreshToken(refreshToken);
+             try {
+                 service.login();
+@@ -795,12 +789,6 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource {
+                 geyser.getLogger().error("Error while attempting to use refresh token for " + bedrockUsername() + "!", e);
+                 return Boolean.FALSE;
+             }
+-            AuthenticationService authenticationService = new MojangAuthenticationService();
+-            String authBaseUri = geyser.getConfig().getAuthBaseUri();
+-            if (!authBaseUri.isEmpty()) {
+-                if (!authBaseUri.endsWith("/")) authBaseUri += "/";
+-                authenticationService.setBaseUri(authBaseUri);
+-            }
+             GameProfile profile = service.getSelectedProfile();
+             if (profile == null) {
+                 // Java account is offline
+@@ -941,16 +929,6 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource {
+             downstream = new LocalSession(this.remoteServer.address(), this.remoteServer.port(),
+                     geyser.getBootstrap().getSocketAddress(), upstream.getAddress().getAddress().getHostAddress(),
+                     this.protocol, this.protocol.createHelper());
+-
+-            String sessionBaseUri = geyser.getConfig().getSessionBaseUri();
+-            if (!sessionBaseUri.isEmpty()) {
+-                if (!sessionBaseUri.endsWith("/")) sessionBaseUri += "/";
+-                if (!sessionBaseUri.endsWith("session/minecraft/")) sessionBaseUri += "session/minecraft/";
+-
+-                SessionService sessionService = new SessionService();
+-                sessionService.setBaseUri(sessionBaseUri);
+-                downstream.setFlag(MinecraftConstants.SESSION_SERVICE_KEY, sessionService);
+-            }
+             this.downstream = new DownstreamSession(downstream);
+         } else {
+             downstream = new TcpClientSession(this.remoteServer.address(), this.remoteServer.port(), this.protocol);
+diff --git a/core/src/main/java/org/geysermc/geyser/util/LoginEncryptionUtils.java b/core/src/main/java/org/geysermc/geyser/util/LoginEncryptionUtils.java
+index 478a6ef9..89a92628 100644
+--- a/core/src/main/java/org/geysermc/geyser/util/LoginEncryptionUtils.java
++++ b/core/src/main/java/org/geysermc/geyser/util/LoginEncryptionUtils.java
+@@ -34,12 +34,14 @@ import org.cloudburstmc.protocol.bedrock.packet.ServerToClientHandshakePacket;
+ import org.cloudburstmc.protocol.bedrock.util.ChainValidationResult;
+ import org.cloudburstmc.protocol.bedrock.util.ChainValidationResult.IdentityData;
+ import org.cloudburstmc.protocol.bedrock.util.EncryptionUtils;
++import org.geysermc.cumulus.form.CustomForm;
+ import org.geysermc.cumulus.form.ModalForm;
+ import org.geysermc.cumulus.form.SimpleForm;
+ import org.geysermc.cumulus.response.SimpleFormResponse;
+ import org.geysermc.cumulus.response.result.FormResponseResult;
+ import org.geysermc.cumulus.response.result.ValidFormResponseResult;
+ import org.geysermc.geyser.GeyserImpl;
++import org.geysermc.geyser.configuration.GeyserConfiguration;
+ import org.geysermc.geyser.session.GeyserSession;
+ import org.geysermc.geyser.session.auth.AuthData;
+ import org.geysermc.geyser.session.auth.BedrockClientData;
+@@ -135,20 +137,31 @@ public class LoginEncryptionUtils {
+         // Set DoDaylightCycle to false so the time doesn't accelerate while we're here
+         session.setDaylightCycle(false);
+ 
++        GeyserConfiguration config = session.getGeyser().getConfig();
++        boolean isPasswordAuthEnabled = config.getRemote().isPasswordAuthentication();
++
+         session.sendForm(
+                 SimpleForm.builder()
+                         .translator(GeyserLocale::getPlayerLocaleString, session.locale())
+                         .title("geyser.auth.login.form.notice.title")
+                         .content("geyser.auth.login.form.notice.desc")
++                        .optionalButton("geyser.auth.login.form.notice.btn_login.mojang", isPasswordAuthEnabled)
+                         .button("geyser.auth.login.form.notice.btn_login.microsoft")
+                         .button("geyser.auth.login.form.notice.btn_disconnect")
+                         .closedOrInvalidResultHandler(() -> buildAndShowLoginWindow(session))
+                         .validResultHandler((response) -> {
+-                            if (response.clickedButtonId() == 0) {
++                            if (response.clickedButtonId() == 0){
++                                buildAndShowLoginDetailsWindow(session);
++                                return;
++                            }
++
++                            if (response.clickedButtonId() == 1) {
+                                 session.authenticateWithMicrosoftCode();
+                                 return;
+                             }
+ 
++
++
+                             session.disconnect(GeyserLocale.getPlayerLocaleString("geyser.auth.login.form.disconnect", session.locale()));
+                         }));
+     }
+@@ -199,6 +212,18 @@ public class LoginEncryptionUtils {
+             }
+         };
+     }
++    public static void buildAndShowLoginDetailsWindow(GeyserSession session) {
++        session.sendForm(
++                CustomForm.builder()
++                        .translator(GeyserLocale::getPlayerLocaleString, session.locale())
++                        .title("geyser.auth.login.form.details.title")
++                        .label("geyser.auth.login.form.details.desc")
++                        .input("geyser.auth.login.form.details.email", "account@qq.com", "")
++                        .input("geyser.auth.login.form.details.pass", "123456", "")
++                        .invalidResultHandler(() -> buildAndShowLoginDetailsWindow(session))
++                        .closedResultHandler(() -> buildAndShowLoginWindow(session))
++                        .validResultHandler((response) -> session.authenticate(response.next(), response.next())));
++    }
+ 
+     /**
+      * Shows the code that a user must input into their browser
+diff --git a/core/src/main/resources/config.yml b/core/src/main/resources/config.yml
+index 143536d7..b10c2788 100644
+--- a/core/src/main/resources/config.yml
++++ b/core/src/main/resources/config.yml
+@@ -114,17 +114,6 @@ debug-mode: false
+ # OptiFine capes, LabyMod capes, 5Zig capes and MinecraftCapes
+ allow-third-party-capes: false
+ 
+-# Set a custom base URI for the authentication server.
+-# Should look similar to the following: https://authserver.example.com/
+-# You don't need this, unless you run your own auth server.
+-# Leave empty to use the official auth servers.
+-auth-base-uri: ""
+-# Set a custom base URI for the session server.
+-# Should look similar to the following: https://session.example.com/
+-# You don't need this, unless you run your own session server.
+-# Leave empty to use the official session servers.
+-session-base-uri: ""
+-
+ # Allow third party deadmau5 ears to be visible. Currently allowing:
+ # MinecraftCapes
+ allow-third-party-ears: false
+-- 
+2.39.1.windows.1
+

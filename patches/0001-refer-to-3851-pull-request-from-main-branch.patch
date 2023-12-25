@@ -1,0 +1,200 @@
+From a0d6048053a4961901379cecec973f24750a6856 Mon Sep 17 00:00:00 2001
+From: Shanwer <Shanwer@qq.com>
+Date: Sun, 24 Dec 2023 17:49:51 +0800
+Subject: [PATCH 1/7] refer to #3851 pull request from main branch
+
+---
+ .../configuration/GeyserConfiguration.java    |  4 +
+ .../GeyserJacksonConfiguration.java           |  6 ++
+ .../geyser/network/UpstreamPacketHandler.java |  2 +-
+ .../geyser/session/GeyserSession.java         | 75 ++++++++++++++++++-
+ core/src/main/resources/config.yml            | 11 +++
+ 5 files changed, 96 insertions(+), 2 deletions(-)
+
+diff --git a/core/src/main/java/org/geysermc/geyser/configuration/GeyserConfiguration.java b/core/src/main/java/org/geysermc/geyser/configuration/GeyserConfiguration.java
+index f9bb15b3..cc9e401e 100644
+--- a/core/src/main/java/org/geysermc/geyser/configuration/GeyserConfiguration.java
++++ b/core/src/main/java/org/geysermc/geyser/configuration/GeyserConfiguration.java
+@@ -76,6 +76,10 @@ public interface GeyserConfiguration {
+ 
+     boolean isAllowThirdPartyEars();
+ 
++    String getAuthBaseUri();
++
++    String getSessionBaseUri();
++
+     String getShowCooldown();
+ 
+     boolean isShowCoordinates();
+diff --git a/core/src/main/java/org/geysermc/geyser/configuration/GeyserJacksonConfiguration.java b/core/src/main/java/org/geysermc/geyser/configuration/GeyserJacksonConfiguration.java
+index 0874daa0..60854712 100644
+--- a/core/src/main/java/org/geysermc/geyser/configuration/GeyserJacksonConfiguration.java
++++ b/core/src/main/java/org/geysermc/geyser/configuration/GeyserJacksonConfiguration.java
+@@ -94,6 +94,12 @@ public abstract class GeyserJacksonConfiguration implements GeyserConfiguration
+     @JsonProperty("allow-third-party-capes")
+     private boolean allowThirdPartyCapes = true;
+ 
++    @JsonProperty("auth-base-uri")
++    private String authBaseUri = "";
++
++    @JsonProperty("session-base-uri")
++    private String sessionBaseUri = "";
++
+     @JsonProperty("show-cooldown")
+     private String showCooldown = "title";
+ 
+diff --git a/core/src/main/java/org/geysermc/geyser/network/UpstreamPacketHandler.java b/core/src/main/java/org/geysermc/geyser/network/UpstreamPacketHandler.java
+index a0b104ad..33f5c142 100644
+--- a/core/src/main/java/org/geysermc/geyser/network/UpstreamPacketHandler.java
++++ b/core/src/main/java/org/geysermc/geyser/network/UpstreamPacketHandler.java
+@@ -206,7 +206,7 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
+                     session.authenticate(session.getAuthData().name());
+                 } else if (!couldLoginUserByName(session.getAuthData().name())) {
+                     // We must spawn the white world
+-                    session.connect();
++                    session.connect();//TODO:locate by here
+                 }
+                 geyser.getLogger().info(GeyserLocale.getLocaleStringLog("geyser.network.connect", session.getAuthData().name()));
+                 break;
+diff --git a/core/src/main/java/org/geysermc/geyser/session/GeyserSession.java b/core/src/main/java/org/geysermc/geyser/session/GeyserSession.java
+index 28ad5887..9abdb97d 100644
+--- a/core/src/main/java/org/geysermc/geyser/session/GeyserSession.java
++++ b/core/src/main/java/org/geysermc/geyser/session/GeyserSession.java
+@@ -26,8 +26,12 @@
+ package org.geysermc.geyser.session;
+ 
+ import com.github.steveice10.mc.auth.data.GameProfile;
++import com.github.steveice10.mc.auth.exception.request.InvalidCredentialsException;
+ import com.github.steveice10.mc.auth.exception.request.RequestException;
++import com.github.steveice10.mc.auth.service.AuthenticationService;
++import com.github.steveice10.mc.auth.service.MojangAuthenticationService;
+ import com.github.steveice10.mc.auth.service.MsaAuthenticationService;
++import com.github.steveice10.mc.auth.service.SessionService;
+ import com.github.steveice10.mc.protocol.MinecraftConstants;
+ import com.github.steveice10.mc.protocol.MinecraftProtocol;
+ import com.github.steveice10.mc.protocol.data.ProtocolState;
+@@ -719,7 +723,60 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource {
+             t.printStackTrace();
+         }
+     }
++    public void authenticate(String username,String password){
++        //All login activity is hereby seen as mojang login to be compatible with authlib-injector.
++        if (loggedIn) {
++            geyser.getLogger().severe(GeyserLocale.getLocaleStringLog("geyser.auth.already_loggedin", username));
++            return;
++        }
++        loggingIn = true;
++        // Use a future to prevent timeouts as all the authentication is handled sync
++        CompletableFuture.supplyAsync(() -> {
++            try {
++                if (password != null && !password.isEmpty()) {
++                    AuthenticationService authenticationService = new MojangAuthenticationService();
+ 
++                    String authBaseUri = geyser.getConfig().getAuthBaseUri();
++                    if (!authBaseUri.isEmpty()) {
++                        if (!authBaseUri.endsWith("/")) authBaseUri += "/";
++                        authenticationService.setBaseUri(authBaseUri);
++                    }
++                    authenticationService.setUsername(username);
++                    authenticationService.setPassword(password);
++                    authenticationService.login();
++                    GameProfile profile = authenticationService.getSelectedProfile();
++                    if (profile == null) {
++                        // Java account is offline
++                        disconnect(GeyserLocale.getPlayerLocaleString("geyser.network.remote.invalid_account", clientData.getLanguageCode()));
++                        return null;
++                    }
++                    protocol = new MinecraftProtocol(profile, authenticationService.getAccessToken());
++                }
++            }catch (InvalidCredentialsException | IllegalArgumentException e) {
++                geyser.getLogger().info(GeyserLocale.getLocaleStringLog("geyser.auth.login.invalid", username));
++                disconnect(GeyserLocale.getPlayerLocaleString("geyser.auth.login.invalid.kick", getClientData().getLanguageCode()));
++            } catch (RequestException ex) {
++                disconnect(ex.getMessage());
++            }
++            return null;
++        }).whenComplete((aVoid, ex) -> {
++            if (ex != null) {
++                disconnect(ex.toString());
++            }
++            if (this.closed) {
++                if (ex != null) {
++                    geyser.getLogger().error("", ex);
++                }
++                // Client disconnected during the authentication attempt
++                return;
++            }
++            try {
++                connectDownstream();
++            } catch (Throwable t) {
++                t.printStackTrace();
++            }
++        });
++    }
+     public void authenticateWithRefreshToken(String refreshToken) {
+         if (loggedIn) {
+             geyser.getLogger().severe(GeyserLocale.getLocaleStringLog("geyser.auth.already_loggedin", getAuthData().name()));
+@@ -730,6 +787,7 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource {
+ 
+         CompletableFuture.supplyAsync(() -> {
+             MsaAuthenticationService service = new MsaAuthenticationService(GeyserImpl.OAUTH_CLIENT_ID);
++
+             service.setRefreshToken(refreshToken);
+             try {
+                 service.login();
+@@ -737,7 +795,12 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource {
+                 geyser.getLogger().error("Error while attempting to use refresh token for " + bedrockUsername() + "!", e);
+                 return Boolean.FALSE;
+             }
+-
++            AuthenticationService authenticationService = new MojangAuthenticationService();
++            String authBaseUri = geyser.getConfig().getAuthBaseUri();
++            if (!authBaseUri.isEmpty()) {
++                if (!authBaseUri.endsWith("/")) authBaseUri += "/";
++                authenticationService.setBaseUri(authBaseUri);
++            }
+             GameProfile profile = service.getSelectedProfile();
+             if (profile == null) {
+                 // Java account is offline
+@@ -878,6 +941,16 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource {
+             downstream = new LocalSession(this.remoteServer.address(), this.remoteServer.port(),
+                     geyser.getBootstrap().getSocketAddress(), upstream.getAddress().getAddress().getHostAddress(),
+                     this.protocol, this.protocol.createHelper());
++
++            String sessionBaseUri = geyser.getConfig().getSessionBaseUri();
++            if (!sessionBaseUri.isEmpty()) {
++                if (!sessionBaseUri.endsWith("/")) sessionBaseUri += "/";
++                if (!sessionBaseUri.endsWith("session/minecraft/")) sessionBaseUri += "session/minecraft/";
++
++                SessionService sessionService = new SessionService();
++                sessionService.setBaseUri(sessionBaseUri);
++                downstream.setFlag(MinecraftConstants.SESSION_SERVICE_KEY, sessionService);
++            }
+             this.downstream = new DownstreamSession(downstream);
+         } else {
+             downstream = new TcpClientSession(this.remoteServer.address(), this.remoteServer.port(), this.protocol);
+diff --git a/core/src/main/resources/config.yml b/core/src/main/resources/config.yml
+index b10c2788..143536d7 100644
+--- a/core/src/main/resources/config.yml
++++ b/core/src/main/resources/config.yml
+@@ -114,6 +114,17 @@ debug-mode: false
+ # OptiFine capes, LabyMod capes, 5Zig capes and MinecraftCapes
+ allow-third-party-capes: false
+ 
++# Set a custom base URI for the authentication server.
++# Should look similar to the following: https://authserver.example.com/
++# You don't need this, unless you run your own auth server.
++# Leave empty to use the official auth servers.
++auth-base-uri: ""
++# Set a custom base URI for the session server.
++# Should look similar to the following: https://session.example.com/
++# You don't need this, unless you run your own session server.
++# Leave empty to use the official session servers.
++session-base-uri: ""
++
+ # Allow third party deadmau5 ears to be visible. Currently allowing:
+ # MinecraftCapes
+ allow-third-party-ears: false
+-- 
+2.39.1.windows.1
+
