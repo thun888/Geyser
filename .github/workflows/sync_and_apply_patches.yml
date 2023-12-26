@@ -10,7 +10,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
 
@@ -27,14 +27,11 @@ jobs:
 
     - name: Merge upstream changes
       run: |
-        git merge upstream/main || {
+        git merge upstream/master || {
           echo "Merge conflict detected! Notifying for manual intervention."
           exit 1
         }
       
-    - name: Clone patch repository
-      run: git clone https://github.com/Shanwer/Geyser.git
-
     - name: Apply patches
       run: |
         for patch in Geyser/patches/*.patch; do
