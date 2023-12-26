@@ -207,7 +207,7 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
                     session.authenticate(session.getAuthData().name());
                 } else if (!couldLoginUserByName(session.getAuthData().name())) {
                     // We must spawn the white world
-                    session.connect();//TODO:locate by here
+                    session.connect();//Let bedrock user to login with online mode on
                 }
                 geyser.getLogger().info(GeyserLocale.getLocaleStringLog("geyser.network.connect", session.getAuthData().name()));
                 break;

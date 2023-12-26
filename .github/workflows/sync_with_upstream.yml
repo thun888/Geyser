@@ -3,6 +3,7 @@ name: Sync with Upstream
 on:
   schedule:
     - cron: '0 0 * * *'
+  workflow_dispatch:
 
 jobs:
   sync:
@@ -32,12 +33,6 @@ jobs:
           exit 1
         }
       
-    - name: Apply patches
-      run: |
-        for patch in Geyser/patches/*.patch; do
-          git apply "$patch"
-        done
-
     - name: Push changes
       uses: ad-m/github-push-action@master
       with:
