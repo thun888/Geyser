@@ -33,7 +33,7 @@ jobs:
         distribution: 'temurin'
         
     - name: Build with Gradle
-      uses: gradle/gradle-build-action@v4 # v2.6.0
+      uses: gradle/gradle-build-action@v3
       with:
         arguments: build
     - name: Archive artifacts (Geyser Fabric)
