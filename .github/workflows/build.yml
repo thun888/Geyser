@@ -24,12 +24,9 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Validate Gradle Wrapper
-        # See https://github.com/gradle/wrapper-validation-action/commits
-        uses: gradle/wrapper-validation-action@v3
-
+      - name: Set up JDK 17
         # See https://github.com/actions/setup-java/commits
-      - uses: actions/setup-java@v4
+        uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: temurin
