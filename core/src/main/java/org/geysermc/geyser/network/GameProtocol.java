@@ -25,8 +25,6 @@
 
 package org.geysermc.geyser.network;
 
-import com.github.steveice10.mc.protocol.codec.MinecraftCodec;
-import com.github.steveice10.mc.protocol.codec.PacketCodec;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.protocol.bedrock.codec.BedrockCodec;
 import org.cloudburstmc.protocol.bedrock.codec.v622.Bedrock_v622;
@@ -36,6 +34,8 @@ import org.cloudburstmc.protocol.bedrock.codec.v662.Bedrock_v662;
 import org.cloudburstmc.protocol.bedrock.codec.v671.Bedrock_v671;
 import org.cloudburstmc.protocol.bedrock.netty.codec.packet.BedrockPacketCodec;
 import org.geysermc.geyser.session.GeyserSession;
+import org.geysermc.mcprotocollib.protocol.codec.MinecraftCodec;
+import org.geysermc.mcprotocollib.protocol.codec.PacketCodec;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -124,7 +124,7 @@ public final class GameProtocol {
      * @return the supported Minecraft: Java Edition version names
      */
     public static List<String> getJavaVersions() {
-        return List.of(DEFAULT_JAVA_CODEC.getMinecraftVersion());
+        return List.of("1.20.5", DEFAULT_JAVA_CODEC.getMinecraftVersion());
     }
 
     /**
