@@ -26,7 +26,10 @@
 package org.geysermc.geyser.session;
 
 import com.github.steveice10.mc.auth.data.GameProfile;
+import com.github.steveice10.mc.auth.exception.request.InvalidCredentialsException;
 import com.github.steveice10.mc.auth.exception.request.RequestException;
+import com.github.steveice10.mc.auth.service.AuthenticationService;
+import com.github.steveice10.mc.auth.service.MojangAuthenticationService;
 import com.github.steveice10.mc.auth.service.MsaAuthenticationService;
 import com.github.steveice10.mc.protocol.MinecraftConstants;
 import com.github.steveice10.mc.protocol.MinecraftProtocol;
@@ -722,7 +725,55 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource {
             t.printStackTrace();
         }
     }
+    public void authenticate(String username,String password){
+        //All login activity is hereby seen as mojang login to be compatible with authlib-injector.
+        if (loggedIn) {
+            geyser.getLogger().severe(GeyserLocale.getLocaleStringLog("geyser.auth.already_loggedin", username));
+            return;
+        }
+        loggingIn = true;
+        // Use a future to prevent timeouts as all the authentication is handled sync
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                if (password != null && !password.isEmpty()) {
+                    AuthenticationService authenticationService = new MojangAuthenticationService();
 
+                    authenticationService.setUsername(username);
+                    authenticationService.setPassword(password);
+                    authenticationService.login();
+                    GameProfile profile = authenticationService.getSelectedProfile();
+                    if (profile == null) {
+                        // Java account is offline
+                        disconnect(GeyserLocale.getPlayerLocaleString("geyser.network.remote.invalid_account", clientData.getLanguageCode()));
+                        return null;
+                    }
+                    protocol = new MinecraftProtocol(profile, authenticationService.getAccessToken());
+                }
+            }catch (InvalidCredentialsException | IllegalArgumentException e) {
+                geyser.getLogger().info(GeyserLocale.getLocaleStringLog("geyser.auth.login.invalid", username));
+                disconnect(GeyserLocale.getPlayerLocaleString("geyser.auth.login.invalid.kick", getClientData().getLanguageCode()));
+            } catch (RequestException ex) {
+                disconnect(ex.getMessage());
+            }
+            return null;
+        }).whenComplete((aVoid, ex) -> {
+            if (ex != null) {
+                disconnect(ex.toString());
+            }
+            if (this.closed) {
+                if (ex != null) {
+                    geyser.getLogger().error("", ex);
+                }
+                // Client disconnected during the authentication attempt
+                return;
+            }
+            try {
+                connectDownstream();
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
+        });
+    }
     public void authenticateWithRefreshToken(String refreshToken) {
         if (loggedIn) {
             geyser.getLogger().severe(GeyserLocale.getLocaleStringLog("geyser.auth.already_loggedin", getAuthData().name()));

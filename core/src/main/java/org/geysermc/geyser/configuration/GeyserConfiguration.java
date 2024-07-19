@@ -36,7 +36,7 @@ import org.geysermc.geyser.text.GeyserLocale;
 
 import java.nio.file.Path;
 import java.util.List;
-
+import java.util.Map;
 public interface GeyserConfiguration {
     /**
      * If the config was originally 'auto' before the values changed
@@ -51,6 +51,8 @@ public interface GeyserConfiguration {
     IRemoteConfiguration getRemote();
 
     List<String> getSavedUserLogins();
+
+    Map<String, ? extends IUserAuthenticationInfo> getUserAuths();
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     boolean isCommandSuggestions();
@@ -122,6 +124,8 @@ public interface GeyserConfiguration {
 
         void setPort(int port);
 
+        boolean isPasswordAuthentication();
+
         boolean isCloneRemotePort();
 
         int getCompressionLevel();
@@ -163,7 +167,13 @@ public interface GeyserConfiguration {
 
         String getUniqueId();
     }
+    interface IUserAuthenticationInfo {
+        String getEmail();
 
+        String getPassword();
+
+        boolean isMicrosoftAccount();
+    }
     int getScoreboardPacketThreshold();
 
     // if u have offline mode enabled pls be safe
