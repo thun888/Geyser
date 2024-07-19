@@ -124,8 +124,6 @@ public interface GeyserConfiguration {
 
         void setPort(int port);
 
-        boolean isPasswordAuthentication();
-
         boolean isCloneRemotePort();
 
         int getCompressionLevel();
@@ -145,6 +143,8 @@ public interface GeyserConfiguration {
         void setAddress(String address);
 
         void setPort(int port);
+
+        boolean isPasswordAuthentication();
 
         boolean isUseProxyProtocol();
 
