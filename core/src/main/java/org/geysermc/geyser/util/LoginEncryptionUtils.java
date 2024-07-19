@@ -145,7 +145,7 @@ public class LoginEncryptionUtils {
                         .content("geyser.auth.login.form.notice.desc")
                         .optionalButton("geyser.auth.login.form.notice.btn_login.mojang", isPasswordAuthEnabled)
                         // .button("geyser.auth.login.form.notice.btn_login.microsoft")
-                        .button("这是什么？")
+                        .button("geyser.fclouds.whats_this")
                         .button("geyser.auth.login.form.notice.btn_disconnect")
                         .closedOrInvalidResultHandler(() -> buildAndShowLoginWindow(session))
                         .validResultHandler((response) -> {
@@ -219,8 +219,8 @@ public class LoginEncryptionUtils {
                 CustomForm.builder()
                         .translator(GeyserLocale::getPlayerLocaleString, session.locale())
                         .title("geyser.auth.login.form.details.title")
-                        .label("在下方输入您在FClouds Skins的账号登录凭据。")
-                        .input("角色名称或邮箱", "playername or account@qq.com", "")
+                        .label("geyser.auth.login.form.details.desc")
+                        .input("geyser.auth.login.form.details.email", "playername or account@qq.com", "")
                         .input("geyser.auth.login.form.details.pass", "123456", "")
                         .invalidResultHandler(() -> buildAndShowLoginDetailsWindow(session))
                         .closedResultHandler(() -> buildAndShowLoginWindow(session))
@@ -230,9 +230,8 @@ public class LoginEncryptionUtils {
         session.sendForm(
                 CustomForm.builder()
                         .translator(GeyserLocale::getPlayerLocaleString, session.locale())
-                        .title("关于")
-                        .content("这是一个登录页面，您可以在群公告内获取详细教程以注册账号登录服务器。")
-                        .content("如果显示需要一个付费账户，请只建立一个游戏角色")
+                        .title("geyser.fclouds.about.title")
+                        .content("geyser.fclouds.about.content")
                         .validResultHandler((response) -> session.authenticate(response.next(), response.next())));
     }
 
