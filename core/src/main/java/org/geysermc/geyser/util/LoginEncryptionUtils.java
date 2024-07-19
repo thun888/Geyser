@@ -144,8 +144,8 @@ public class LoginEncryptionUtils {
                         .title("geyser.auth.login.form.notice.title")
                         .content("geyser.auth.login.form.notice.desc")
                         .optionalButton("geyser.auth.login.form.notice.btn_login.mojang", isPasswordAuthEnabled)
-                        // .button("geyser.auth.login.form.notice.btn_login.microsoft")
-                        // .button("geyser.fclouds.whats_this")
+                        .button("geyser.auth.login.form.notice.btn_login.microsoft")
+                        .button("geyser.fclouds.whats_this")
                         .button("geyser.auth.login.form.notice.btn_disconnect")
                         .closedOrInvalidResultHandler(() -> buildAndShowLoginWindow(session))
                         .validResultHandler((response) -> {
@@ -154,10 +154,10 @@ public class LoginEncryptionUtils {
                                 return;
                             }
 
-                            // if (response.clickedButtonId() == 1){
-                            //     buildAndShowLoginInfoWindow(session);
-                            //     return;
-                            // }
+                            if (response.clickedButtonId() == 1){
+                                buildAndShowLoginInfoWindow(session);
+                                return;
+                            }
 
                             // if (response.clickedButtonId() == 1) {
                             //     session.authenticateWithMicrosoftCode();
@@ -227,14 +227,14 @@ public class LoginEncryptionUtils {
                         .validResultHandler((response) -> session.authenticate(response.next(), response.next())));
     }
 
-    // public static void buildAndShowLoginInfoWindow(GeyserSession session) {
-    //     session.sendForm(
-    //             CustomForm.builder()
-    //                     .translator(GeyserLocale::getPlayerLocaleString, session.locale())
-    //                     .title("geyser.fclouds.about.title")
-    //                     .content("geyser.fclouds.about.content")
-    //                     .validResultHandler((response) -> session.authenticate(response.next(), response.next())));
-    // }
+    public static void buildAndShowLoginInfoWindow(GeyserSession session) {
+        session.sendForm(
+                CustomForm.builder()
+                        .translator(GeyserLocale::getPlayerLocaleString, session.locale())
+                        .title("geyser.fclouds.about.title")
+                        .content("geyser.fclouds.about.content")
+                        .validResultHandler((response) -> session.authenticate(response.next(), response.next())));
+    }
 
     /**
      * Shows the code that a user must input into their browser
