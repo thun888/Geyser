@@ -145,6 +145,7 @@ public class LoginEncryptionUtils {
                         .content("geyser.auth.login.form.notice.desc")
                         .optionalButton("geyser.auth.login.form.notice.btn_login.mojang", isPasswordAuthEnabled)
                         // .button("geyser.auth.login.form.notice.btn_login.microsoft")
+                        .button("这是什么？")
                         .button("geyser.auth.login.form.notice.btn_disconnect")
                         .closedOrInvalidResultHandler(() -> buildAndShowLoginWindow(session))
                         .validResultHandler((response) -> {
@@ -153,10 +154,15 @@ public class LoginEncryptionUtils {
                                 return;
                             }
 
-                            if (response.clickedButtonId() == 1) {
-                                session.authenticateWithMicrosoftCode();
+                            if (response.clickedButtonId() == 1){
+                                buildAndShowLoginInfoWindow(session);
                                 return;
                             }
+
+                            // if (response.clickedButtonId() == 1) {
+                            //     session.authenticateWithMicrosoftCode();
+                            //     return;
+                            // }
 
                             session.disconnect(GeyserLocale.getPlayerLocaleString("geyser.auth.login.form.disconnect", session.locale()));
                         }));
@@ -213,13 +219,23 @@ public class LoginEncryptionUtils {
                 CustomForm.builder()
                         .translator(GeyserLocale::getPlayerLocaleString, session.locale())
                         .title("geyser.auth.login.form.details.title")
-                        .label("geyser.auth.login.form.details.desc")
-                        .input("geyser.auth.login.form.details.email", "account@qq.com", "")
+                        .label("在下方输入您在FClouds Skins的账号登录凭据。")
+                        .input("角色名称或邮箱", "playername or account@qq.com", "")
                         .input("geyser.auth.login.form.details.pass", "123456", "")
                         .invalidResultHandler(() -> buildAndShowLoginDetailsWindow(session))
                         .closedResultHandler(() -> buildAndShowLoginWindow(session))
                         .validResultHandler((response) -> session.authenticate(response.next(), response.next())));
     }
+        public static void buildAndShowLoginInfoWindow(GeyserSession session) {
+        session.sendForm(
+                CustomForm.builder()
+                        .translator(GeyserLocale::getPlayerLocaleString, session.locale())
+                        .title("关于")
+                        .content("这是一个登录页面，您可以在群公告内获取详细教程以注册账号登录服务器。")
+                        .content("如果显示需要一个付费账户，请只建立一个游戏角色")
+                        .validResultHandler((response) -> session.authenticate(response.next(), response.next())));
+    }
+
     /**
      * Shows the code that a user must input into their browser
      */
