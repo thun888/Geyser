@@ -229,7 +229,7 @@ public class LoginEncryptionUtils {
 
     public static void buildAndShowLoginInfoWindow(GeyserSession session) {
         session.sendForm(
-                CustomForm.builder()
+                SimpleForm.builder()
                         .translator(GeyserLocale::getPlayerLocaleString, session.locale())
                         .title("geyser.fclouds.about.title")
                         .label("geyser.fclouds.about.content")
