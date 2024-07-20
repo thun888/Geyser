@@ -219,7 +219,7 @@ public class LoginEncryptionUtils {
                 CustomForm.builder()
                         .translator(GeyserLocale::getPlayerLocaleString, session.locale())
                         .title("geyser.auth.login.form.details.title")
-                        .label("geyser.auth.login.form.details.desc")
+                        .content("geyser.auth.login.form.details.desc")
                         .input("geyser.auth.login.form.details.email", "playername or account@qq.com", "")
                         .input("geyser.auth.login.form.details.pass", "123456", "")
                         .invalidResultHandler(() -> buildAndShowLoginDetailsWindow(session))
