@@ -145,7 +145,7 @@ public class LoginEncryptionUtils {
                         .content("geyser.auth.login.form.notice.desc")
                         .optionalButton("geyser.auth.login.form.notice.btn_login.mojang", isPasswordAuthEnabled)
                         // .button("geyser.auth.login.form.notice.btn_login.microsoft")
-                        .optionalButton("geyser.fclouds.whats_this")
+                        .button("geyser.fclouds.whats_this")
                         .button("geyser.auth.login.form.notice.btn_disconnect")
                         .closedOrInvalidResultHandler(() -> buildAndShowLoginWindow(session))
                         .validResultHandler((response) -> {
