@@ -229,10 +229,10 @@ public class LoginEncryptionUtils {
 
     public static void buildAndShowLoginInfoWindow(GeyserSession session) {
         session.sendForm(
-                CustomForm.builder()
+                SimpleForm.builder()
                         .translator(GeyserLocale::getPlayerLocaleString, session.locale())
                         .title("geyser.fclouds.about.title")
-                        .label("geyser.fclouds.about.content")
+                        .content("geyser.fclouds.about.content")
                         .button("geyser.auth.login.form.notice.btn_login.mojang")
                         .button("geyser.auth.login.form.notice.btn_disconnect")
                         .closedOrInvalidResultHandler(() -> buildAndShowLoginWindow(session))
