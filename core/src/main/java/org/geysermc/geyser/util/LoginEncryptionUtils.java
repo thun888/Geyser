@@ -219,7 +219,7 @@ public class LoginEncryptionUtils {
                 CustomForm.builder()
                         .translator(GeyserLocale::getPlayerLocaleString, session.locale())
                         .title("geyser.auth.login.form.details.title")
-                        .content("geyser.auth.login.form.details.desc")
+                        .label("geyser.auth.login.form.details.desc")
                         .input("geyser.auth.login.form.details.email", "playername or account@qq.com", "")
                         .input("geyser.auth.login.form.details.pass", "123456", "")
                         .invalidResultHandler(() -> buildAndShowLoginDetailsWindow(session))
@@ -232,7 +232,7 @@ public class LoginEncryptionUtils {
                 SimpleForm.builder()
                         .translator(GeyserLocale::getPlayerLocaleString, session.locale())
                         .title("geyser.fclouds.about.title")
-                        .label("geyser.fclouds.about.content")
+                        .content("geyser.fclouds.about.content")
                         .button("geyser.auth.login.form.notice.btn_login.mojang")
                         .button("geyser.auth.login.form.notice.btn_disconnect")
                         .validResultHandler((response) -> {
