@@ -233,6 +233,16 @@ public class LoginEncryptionUtils {
                         .translator(GeyserLocale::getPlayerLocaleString, session.locale())
                         .title("geyser.fclouds.about.title")
                         .label("geyser.fclouds.about.content")
+                        .optionalButton("geyser.auth.login.form.notice.btn_login.mojang", isPasswordAuthEnabled)
+                        .button("geyser.auth.login.form.notice.btn_disconnect")
+                        .validResultHandler((response) -> {
+                            if (response.clickedButtonId() == 0){
+                                buildAndShowLoginDetailsWindow(session);
+                                return;
+                            }
+                            session.disconnect(GeyserLocale.getPlayerLocaleString("geyser.auth.login.form.disconnect", session.locale()));
+                        })
+                        
         );
     }
 
