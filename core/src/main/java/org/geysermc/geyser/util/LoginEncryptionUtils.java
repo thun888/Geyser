@@ -233,7 +233,7 @@ public class LoginEncryptionUtils {
                         .translator(GeyserLocale::getPlayerLocaleString, session.locale())
                         .title("geyser.fclouds.about.title")
                         .label("geyser.fclouds.about.content")
-                        .optionalButton("geyser.auth.login.form.notice.btn_login.mojang")
+                        .button("geyser.auth.login.form.notice.btn_login.mojang")
                         .button("geyser.auth.login.form.notice.btn_disconnect")
                         .validResultHandler((response) -> {
                             if (response.clickedButtonId() == 0){
