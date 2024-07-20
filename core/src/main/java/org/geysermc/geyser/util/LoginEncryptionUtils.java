@@ -233,7 +233,7 @@ public class LoginEncryptionUtils {
                         .translator(GeyserLocale::getPlayerLocaleString, session.locale())
                         .title("geyser.fclouds.about.title")
                         .label("geyser.fclouds.about.content")
-                        .validResultHandler((response) -> session.authenticate(response.next(), response.next())));
+        );
     }
 
     /**
